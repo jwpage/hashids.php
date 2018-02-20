@@ -11,13 +11,15 @@
 
 namespace Hashids;
 
-use RuntimeException;
+use Hashids\Math\MathInterface;
 
 /**
  * This is the math class.
  *
  * @author Vincent Klaiber <hello@vinkla.com>
  * @author Jakub Kramarz <lenwe@lenwe.net>
+ * @deprecated no longer used in internal code, provided only for backwards
+ * compatibility
  */
 class Math
 {
@@ -27,21 +29,11 @@ class Math
      * @param string $a
      * @param string $b
      *
-     * @throws \RuntimeException
-     *
      * @return string
      */
     public static function add($a, $b)
     {
-        if (function_exists('gmp_add')) {
-            return gmp_add($a, $b);
-        }
-
-        if (function_exists('bcadd')) {
-            return bcadd($a, $b, 0);
-        }
-
-        throw new RuntimeException('Missing BC Math or GMP extension.');
+        return self::getMathInstance()->add($a, $b);
     }
 
     /**
@@ -50,21 +42,11 @@ class Math
      * @param string $a
      * @param string $b
      *
-     * @throws \RuntimeException
-     *
      * @return string
      */
     public static function multiply($a, $b)
     {
-        if (function_exists('gmp_mul')) {
-            return gmp_mul($a, $b);
-        }
-
-        if (function_exists('bcmul')) {
-            return bcmul($a, $b, 0);
-        }
-
-        throw new RuntimeException('Missing BC Math or GMP extension.');
+        return self::getMathInstance()->multiply($a, $b);
     }
 
     /**
@@ -73,21 +55,11 @@ class Math
      * @param string $a
      * @param string $b
      *
-     * @throws \RuntimeException
-     *
      * @return string
      */
     public static function divide($a, $b)
     {
-        if (function_exists('gmp_div_q')) {
-            return gmp_div_q($a, $b);
-        }
-
-        if (function_exists('bcdiv')) {
-            return bcdiv($a, $b, 0);
-        }
-
-        throw new RuntimeException('Missing BC Math or GMP extension.');
+        return self::getMathInstance()->divide($a, $b);
     }
 
     /**
@@ -96,21 +68,11 @@ class Math
      * @param string $n
      * @param string $d
      *
-     * @throws \RuntimeException
-     *
      * @return string
      */
     public static function mod($n, $d)
     {
-        if (function_exists('gmp_mod')) {
-            return gmp_mod($n, $d);
-        }
-
-        if (function_exists('bcmod')) {
-            return bcmod($n, $d);
-        }
-
-        throw new RuntimeException('Missing BC Math or GMP extension.');
+        return self::getMathInstance()->mod($n, $d);
     }
 
     /**
@@ -119,21 +81,11 @@ class Math
      * @param string $a
      * @param string $b
      *
-     * @throws \RuntimeException
-     *
      * @return bool
      */
     public static function greaterThan($a, $b)
     {
-        if (function_exists('gmp_cmp')) {
-            return gmp_cmp($a, $b) > 0;
-        }
-
-        if (function_exists('bccomp')) {
-            return bccomp($a, $b, 0) > 0;
-        }
-
-        throw new RuntimeException('Missing BC Math or GMP extension.');
+        return self::getMathInstance()->greaterThan($a, $b);
     }
 
     /**
@@ -145,11 +97,7 @@ class Math
      */
     public static function intval($a)
     {
-        if (function_exists('gmp_intval')) {
-            return gmp_intval($a);
-        }
-
-        return intval($a);
+        return self::getMathInstance()->intval($a);
     }
 
     /**
@@ -161,11 +109,7 @@ class Math
      */
     public static function strval($a)
     {
-        if (function_exists('gmp_strval')) {
-            return gmp_strval($a);
-        }
-
-        return $a;
+        return self::getMathInstance()->strval($a);
     }
 
     /**
@@ -177,10 +121,22 @@ class Math
      */
     public static function get($a)
     {
-        if (function_exists('gmp_init')) {
-            return gmp_init($a);
-        }
+        return self::getMathInstance()->get($a);
+    }
 
-        return $a;
+    /**
+     * Create an instance of MathInterface depending on available extensions.
+     *
+     * @return MathInterface
+     */
+    protected static function getMathInstance()
+    {
+        if (extension_loaded('gmp')) {
+            return new Gmp();
+        } elseif (extension_loaded('bcmath')) {
+            return new Bc();
+        } else {
+            throw new RuntimeException('Missing BC Math or GMP extension.');
+        }
     }
 }

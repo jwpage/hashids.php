@@ -11,6 +11,10 @@
 
 namespace Hashids;
 
+use Hashids\Math\Bc;
+use Hashids\Math\Gmp;
+use RuntimeException;
+
 /**
  * This is the hashids class.
  *
@@ -75,6 +79,8 @@ class Hashids implements HashidsInterface
      */
     protected $salt;
 
+    protected $math;
+
     /**
      * Create a new hashids instance.
      *
@@ -98,6 +104,14 @@ class Hashids implements HashidsInterface
 
         if (strpos($this->alphabet, ' ') !== false) {
             throw new HashidsException('Alphabet can\'t contain spaces.');
+        }
+
+        if (extension_loaded('gmp')) {
+            $this->math = new Gmp();
+        } else if (extension_loaded('bcmath')) {
+            $this->math = new Bc();
+        } else {
+            throw new RuntimeException('Missing BC Math or GMP extension.');
         }
 
         $alphabetArray = str_split($this->alphabet);
@@ -161,7 +175,7 @@ class Hashids implements HashidsInterface
         $numbersHashInt = 0;
 
         foreach ($numbers as $i => $number) {
-            $numbersHashInt += Math::intval(Math::mod($number, ($i + 100)));
+            $numbersHashInt += $this->math->intval($this->math->mod($number, ($i + 100)));
         }
 
         $lottery = $ret = $alphabet[$numbersHashInt % strlen($alphabet)];
@@ -171,7 +185,7 @@ class Hashids implements HashidsInterface
 
             if ($i + 1 < $numbersSize) {
                 $number %= (ord($last) + $i);
-                $sepsIndex = Math::intval(Math::mod($number, strlen($this->seps)));
+                $sepsIndex = $this->math->intval($this->math->mod($number, strlen($this->seps)));
                 $ret .= $this->seps[$sepsIndex];
             }
         }
@@ -240,10 +254,10 @@ class Hashids implements HashidsInterface
             foreach ($hashArray as $subHash) {
                 $alphabet = $this->shuffle($alphabet, substr($lottery.$this->salt.$alphabet, 0, strlen($alphabet)));
                 $result = $this->unhash($subHash, $alphabet);
-                if (Math::greaterThan($result, PHP_INT_MAX)) {
-                    $ret[] = Math::strval($result);
+                if ($this->math->greaterThan($result, PHP_INT_MAX)) {
+                    $ret[] = $this->math->strval($result);
                 } else {
-                    $ret[] = Math::intval($result);
+                    $ret[] = $this->math->intval($result);
                 }
             }
 
@@ -348,10 +362,10 @@ class Hashids implements HashidsInterface
         $alphabetLength = strlen($alphabet);
 
         do {
-            $hash = $alphabet[Math::intval(Math::mod($input, $alphabetLength))].$hash;
+            $hash = $alphabet[$this->math->intval($this->math->mod($input, $alphabetLength))].$hash;
 
-            $input = Math::divide($input, $alphabetLength);
-        } while (Math::greaterThan($input, 0));
+            $input = $this->math->divide($input, $alphabetLength);
+        } while ($this->math->greaterThan($input, 0));
 
         return $hash;
     }
@@ -375,8 +389,8 @@ class Hashids implements HashidsInterface
 
             foreach ($inputChars as $char) {
                 $position = strpos($alphabet, $char);
-                $number = Math::multiply($number, $alphabetLength);
-                $number = Math::add($number, $position);
+                $number = $this->math->multiply($number, $alphabetLength);
+                $number = $this->math->add($number, $position);
             }
         }
 

@@ -11,7 +11,8 @@
 
 namespace Hashids\Tests;
 
-use Hashids\Math;
+use Hashids\Math\Bc;
+use Hashids\Math\Gmp;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -21,40 +22,68 @@ use PHPUnit\Framework\TestCase;
  */
 class MathTest extends TestCase
 {
-    public function testAdd()
+    public function mathProvider()
     {
-        $this->assertEquals(Math::get(3), Math::add(1, 2));
+        return [
+            [new Bc], [new Gmp]
+        ];
     }
 
-    public function testMultiply()
+    /**
+     * @dataProvider mathProvider
+     */
+    public function testAdd($math)
     {
-        $this->assertEquals(Math::get(12), Math::multiply(2, 6));
+        $this->assertEquals($math->get(3), $math->add(1, 2));
     }
 
-    public function testDivide()
+    /**
+     * @dataProvider mathProvider
+     */
+    public function testMultiply($math)
     {
-        $this->assertEquals(Math::get(2), Math::divide(4, 2));
+        $this->assertEquals($math->get(12), $math->multiply(2, 6));
     }
 
-    public function testGreaterThan()
+    /**
+     * @dataProvider mathProvider
+     */
+    public function testDivide($math)
     {
-        $this->assertTrue(Math::greaterThan('18446744073709551615', '9223372036854775807'));
-        $this->assertFalse(Math::greaterThan('9223372036854775807', '18446744073709551615'));
-        $this->assertFalse(Math::greaterThan('9223372036854775807', '9223372036854775807'));
+        $this->assertEquals($math->get(2), $math->divide(4, 2));
     }
 
-    public function testMod()
+    /**
+     * @dataProvider mathProvider
+     */
+    public function testGreaterThan($math)
     {
-        $this->assertEquals(Math::get(15), Math::mod('18446744073709551615', '100'));
+        $this->assertTrue($math->greaterThan('18446744073709551615', '9223372036854775807'));
+        $this->assertFalse($math->greaterThan('9223372036854775807', '18446744073709551615'));
+        $this->assertFalse($math->greaterThan('9223372036854775807', '9223372036854775807'));
     }
 
-    public function testIntval()
+    /**
+     * @dataProvider mathProvider
+     */
+    public function testMod($math)
     {
-        $this->assertSame(9223372036854775807, Math::intval('9223372036854775807'));
+        $this->assertEquals($math->get(15), $math->mod('18446744073709551615', '100'));
     }
 
-    public function testStrval()
+    /**
+     * @dataProvider mathProvider
+     */
+    public function testIntval($math)
     {
-        $this->assertSame('18446744073709551615', Math::strval(Math::add('0', '18446744073709551615')));
+        $this->assertSame(9223372036854775807, $math->intval('9223372036854775807'));
+    }
+
+    /**
+     * @dataProvider mathProvider
+     */
+    public function testStrval($math)
+    {
+        $this->assertSame('18446744073709551615', $math->strval($math->add('0', '18446744073709551615')));
     }
 }
